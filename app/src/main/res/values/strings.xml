@@ -3,4 +3,5 @@
     <string name="add_settings">Add</string>
     <string name="editable_settings">Edit</string>
     <string name="search_settings">SEARCH</string>
+    <string name="search_hint">Поиск</string>
 </resources>
