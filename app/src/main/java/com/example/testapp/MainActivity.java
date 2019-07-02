@@ -18,9 +18,15 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+
+import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import static android.preference.PreferenceManager.getDefaultSharedPreferences;
 
@@ -63,11 +69,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
         myPreferences = getDefaultSharedPreferences(this);//APP_PREFERENCES, Context.MODE_PRIVATE);
-
-        //SaveMap = new HashMap<>();
-        //HashMap<String, Boolean> SaveMap = new HashMap<>();
         viewList = new ArrayList<>();
-        LoadPeferences();
+        loadPeferences();
     }
 
     @Override
@@ -77,9 +80,9 @@ public class MainActivity extends AppCompatActivity {
         //сохраним view
         SharedPreferences.Editor myEditor = myPreferences.edit();
         myEditor.clear();
-        for(View item : viewList){
-            myEditor.putBoolean(((EditText)item.findViewById(R.id.editText)).getText().toString(),
-                                ((CheckBox)item.findViewById(R.id.checkBox1)).isChecked());
+        for (View item : viewList) {
+            myEditor.putBoolean(((EditText) item.findViewById(R.id.editText)).getText().toString(),
+                    ((CheckBox) item.findViewById(R.id.checkBox1)).isChecked());
         }
         myEditor.apply();
     }
@@ -94,7 +97,6 @@ public class MainActivity extends AppCompatActivity {
         // Bind the Activity’s SearchableInfo to the Search View
         SearchView searchView = (SearchView) menu.findItem(R.id.search_settings).getActionView();
         searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
-
         return true;
     }
 
@@ -105,32 +107,21 @@ public class MainActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        switch (id){
+        switch (id) {
             case R.id.add_settings:
                 counter++;
                 addContent("New entries" + counter, false);
-            return true;
+                return true;
             case R.id.editable_settings:
                 editFlag = !editFlag; // инвертируем флаг разрешения редактирования editText'ов
                 setSubTitleOnToolbar();
-                for(View item_1 : viewList){
+                for (View item_1 : viewList) {
                     EditText text1 = item_1.findViewById(R.id.editText);
-                    //text1.setText("Changed "+ item_1.toString());
-                    if (editFlag) {
-                        //Настраиваем EditText на запись
-                        text1.setFocusable(true);
-                        text1.setFocusableInTouchMode(true);
-                        text1.setClickable(false);
-                        setOptionTitle(R.id.editable_settings, "Read");
-                    }else{
-                        //Настраиваем EditText только на чтение (дабы случайно не изменить)
-                        text1.setFocusable(false);
-                        text1.setClickable(true);
-                        setOptionTitle(R.id.editable_settings, "Edit");
-                    }
+                    Button deleteField1 = item_1.findViewById(R.id.remove);
+                    settingItemsOnContentActivity(deleteField1, text1);
                 }
                 //Toast.makeText(getApplicationContext(), "text", Toast.LENGTH_SHORT).show();
-            return true;
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -151,18 +142,7 @@ public class MainActivity extends AppCompatActivity {
 
         chkBox1.setChecked(chekedState);
         text.setText(strText);
-
-        if (editFlag){
-            //Настраиваем EditText на запись
-            text.setFocusable(true);
-            text.setFocusableInTouchMode(true);
-            text.setClickable(false);
-        }else{
-            //Настраиваем EditText только на чтение (дабы случайно не изменить)
-            text.setFocusable(false);
-            text.setClickable(true);
-        }
-
+        settingItemsOnContentActivity(deleteField, text);
         //добавляем всё что создаём в массив
         viewList.add(view);
         // добавляем элемнты в linearLayout
@@ -179,29 +159,63 @@ public class MainActivity extends AppCompatActivity {
                     //удаляем эту же запись из массива что бы не оставалось мертвых записей
                     viewList.remove(view);
                     Log.d("CLICK ROW", viewList.toString());
-                } catch(IndexOutOfBoundsException ex) {
+                } catch (IndexOutOfBoundsException ex) {
                     ex.printStackTrace();
                 }
             }
         });
     }
-    private void LoadPeferences(){
-        Map<String, ?> prefsMap = myPreferences.getAll();
-        for (Map.Entry<String, ?> entry: prefsMap.entrySet()){
+
+    private void loadPeferences() {
+        //Необходимо загрузить неотсортированный список настроек приложения и отсортировать
+        //по алфавиту, чтобы легко было находить item'ы.
+        Comparator<String> comparator = new Comparator<String>() {
+            @Override
+            public int compare(String s, String t1) {
+                Collator collator = Collator.getInstance(new Locale("ru", "RU"));
+                collator.setStrength(Collator.PRIMARY);
+                return collator.compare(s, t1);
+            }
+        };
+        SortedMap<String, Boolean> sortedMap = new TreeMap<String, Boolean>(comparator);
+
+        for (Map.Entry<String, ?> entry : myPreferences.getAll().entrySet()) {
+            sortedMap.put(entry.getKey(), (Boolean) entry.getValue());
             //Log.d("CLICK ROW:" , " SharedPreferences " + entry.getKey() + " : " + entry.getValue().toString());
-            addContent(entry.getKey(),(Boolean) entry.getValue());
+        }
+        for (Map.Entry<String, ?> entry : sortedMap.entrySet()) {
+            //Log.d("CLICK ROW:" , " SharedPreferences " + entry.getKey() + " : " + entry.getValue().toString());
+            addContent(entry.getKey(), (Boolean) entry.getValue());
         }
     }
-    private void setOptionTitle(int id, String title)
-    {
+
+    private void setOptionTitle(int id, String title) {
         MenuItem item = menu.findItem(id);
         item.setTitle(title);
     }
-    private void setSubTitleOnToolbar(){
-        if (editFlag){
+
+    private void setSubTitleOnToolbar() {
+        if (editFlag) {
             toolbar.setSubtitle("Edit mode");
-        }else{
+        } else {
             toolbar.setSubtitle("Read only");
+        }
+    }
+
+    private void settingItemsOnContentActivity(Button btn, EditText edt){
+        if (editFlag) {
+            //Активируем removeButton для возможности удаления кастомных активити
+            btn.setEnabled(true);
+            //Настраиваем EditText на запись
+            edt.setFocusable(true);
+            edt.setFocusableInTouchMode(true);
+            edt.setClickable(false);
+        } else {
+            //Деактивируем removeButton для невозможности удаления кастомных активити
+            btn.setEnabled(false);
+            //Настраиваем EditText только на чтение (дабы случайно не изменить)
+            edt.setFocusable(false);
+            edt.setClickable(true);
         }
     }
 }
