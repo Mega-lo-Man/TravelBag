@@ -2,12 +2,16 @@ package com.example.testapp;
 
 
 import android.app.SearchManager;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -17,11 +21,12 @@ import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -35,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
     // это будет именем файла настроек
     //public static final String APP_PREFERENCES = "mysettings";
 
+    LinkedHashMap<String,Boolean> linkedHashMap = new LinkedHashMap<String,Boolean>();
+
     private static Boolean editFlag = false; // Флаг разрешения/запрета редактирования editText'ов
 
     private int counter = 0;
@@ -47,6 +54,13 @@ public class MainActivity extends AppCompatActivity {
     private Toolbar toolbar;
 
     private SharedPreferences myPreferences;
+
+    private RecyclerView recyclerView;
+    private RecyclerView.Adapter mAdapter;
+    private RecyclerView.LayoutManager layoutManager;
+
+    private DataAdapter myAdapter;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +84,44 @@ public class MainActivity extends AppCompatActivity {
 
         myPreferences = getDefaultSharedPreferences(this);//APP_PREFERENCES, Context.MODE_PRIVATE);
         viewList = new ArrayList<>();
-        loadPeferences();
+        recyclerView = findViewById(R.id.my_recycler_view);
+        recyclerView.setHasFixedSize(true);
+
+        layoutManager = new LinearLayoutManager(this);
+
+        recyclerView.setLayoutManager(layoutManager);
+
+        myAdapter = new DataAdapter(loadPeferences(), new DataAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(final int position) {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                // Add the buttons
+                builder.setTitle("Your Title");
+                builder.setMessage("Your Dialog Message");
+                builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User clicked OK button
+                        String key = (new ArrayList<>(linkedHashMap.keySet())).get(position);
+                        linkedHashMap.remove(key);
+                        myAdapter.notifyDataSetChanged();
+                    }
+                });
+                builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User cancelled the dialog
+                    }
+                });
+
+                AlertDialog dialog = builder.create();
+                dialog.show();
+
+
+                Toast.makeText(MainActivity.this, "Item: "+position, Toast.LENGTH_SHORT).show();
+            }
+        });
+        recyclerView.setAdapter(myAdapter);
+
     }
 
     @Override
@@ -110,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
         switch (id) {
             case R.id.add_settings:
                 counter++;
-                addContent("New entries" + counter, false);
+                addItem("New entries" + counter, false);
                 return true;
             case R.id.editable_settings:
                 editFlag = !editFlag; // инвертируем флаг разрешения редактирования editText'ов
@@ -129,44 +180,12 @@ public class MainActivity extends AppCompatActivity {
     // метод добавляет content_main на основную Activity
     // strText - текст записываемый в EditText
     // chekedState - состояние CheckBox'а
-    private void addContent(String strText, boolean chekedState) {
-        //находим наш linear который у нас под кнопкой add edittext в activity_main.xml
-        final LinearLayout linear = findViewById(R.id.linear);
-
-        //берем наш кастомный лейаут находим через него все наши кнопки и едит тексты, задаем нужные данные
-        final View view = getLayoutInflater().inflate(R.layout.content_main, null);
-
-        Button deleteField = view.findViewById(R.id.remove);
-        EditText text = view.findViewById(R.id.editText);
-        CheckBox chkBox1 = view.findViewById(R.id.checkBox1);
-
-        chkBox1.setChecked(chekedState);
-        text.setText(strText);
-        settingItemsOnContentActivity(deleteField, text);
-        //добавляем всё что создаём в массив
-        viewList.add(view);
-        // добавляем элемнты в linearLayout
-        linear.addView(view);
-        //Log.d("CLICK ROW", String.valueOf(view.getTag()));
-        Log.d("CLICK ROW", ((EditText) view.findViewById(R.id.editText)).getText().toString());
-
-        deleteField.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    //получаем родительский view и удаляем его
-                    ((LinearLayout) view.getParent()).removeView(view);
-                    //удаляем эту же запись из массива что бы не оставалось мертвых записей
-                    viewList.remove(view);
-                    Log.d("CLICK ROW", viewList.toString());
-                } catch (IndexOutOfBoundsException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        });
+    private void addItem(String strText, boolean chekedState) {
+        linkedHashMap.put(strText, chekedState);
+        myAdapter.notifyDataSetChanged();
     }
 
-    private void loadPeferences() {
+    private LinkedHashMap<String, Boolean> loadPeferences() {
         //Необходимо загрузить неотсортированный список настроек приложения и отсортировать
         //по алфавиту, чтобы легко было находить item'ы.
         Comparator<String> comparator = new Comparator<String>() {
@@ -185,8 +204,16 @@ public class MainActivity extends AppCompatActivity {
         }
         for (Map.Entry<String, ?> entry : sortedMap.entrySet()) {
             //Log.d("CLICK ROW:" , " SharedPreferences " + entry.getKey() + " : " + entry.getValue().toString());
-            addContent(entry.getKey(), (Boolean) entry.getValue());
+            addItem(entry.getKey(), (Boolean) entry.getValue());
         }
+
+        linkedHashMap.put("String1", true);
+        linkedHashMap.put("String2", true);
+        linkedHashMap.put("String3", false);
+        linkedHashMap.put("String4", true);
+        linkedHashMap.put("String5", true);
+        linkedHashMap.put("String6", true);
+        return linkedHashMap;
     }
 
     private void setOptionTitle(int id, String title) {

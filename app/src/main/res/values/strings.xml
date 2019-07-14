@@ -4,4 +4,6 @@
     <string name="editable_settings">Edit</string>
     <string name="search_settings">SEARCH</string>
     <string name="search_hint">Поиск</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
 </resources>
