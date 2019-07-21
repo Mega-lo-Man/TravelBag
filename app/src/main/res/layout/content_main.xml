@@ -23,7 +23,9 @@
         android:layout_toStartOf="@+id/checkBox1"
         android:layout_toLeftOf="@+id/checkBox1"
         android:text="Some text"
-        android:importantForAutofill="no"/>
+        android:importantForAutofill="no"
+        android:imeOptions="actionGo"
+        android:textColor="@drawable/color_selector"/>
 
     <CheckBox
         android:id="@+id/checkBox1"

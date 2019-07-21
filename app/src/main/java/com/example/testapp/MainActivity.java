@@ -1,8 +1,8 @@
 package com.example.testapp;
 
 
-import android.app.SearchManager;
 import android.app.AlertDialog;
+import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -15,17 +15,19 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
+import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -40,10 +42,11 @@ public class MainActivity extends AppCompatActivity {
     // это будет именем файла настроек
     //public static final String APP_PREFERENCES = "mysettings";
 
-    LinkedHashMap<String,Boolean> linkedHashMap = new LinkedHashMap<String,Boolean>();
-
     private static Boolean editFlag = false; // Флаг разрешения/запрета редактирования editText'ов
+    LinkedHashMap<String, Boolean> linkedHashMap = new LinkedHashMap<String, Boolean>();
 
+    //ArrayList<record> itemsList;
+    HashMap<String, Integer> record;
     private int counter = 0;
 
     //список вьюх которые будут создаваться
@@ -56,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private SharedPreferences myPreferences;
 
     private RecyclerView recyclerView;
-    private RecyclerView.Adapter mAdapter;
+
     private RecyclerView.LayoutManager layoutManager;
 
     private DataAdapter myAdapter;
@@ -83,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         myPreferences = getDefaultSharedPreferences(this);//APP_PREFERENCES, Context.MODE_PRIVATE);
-        viewList = new ArrayList<>();
+
         recyclerView = findViewById(R.id.my_recycler_view);
         recyclerView.setHasFixedSize(true);
 
@@ -91,33 +94,27 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerView.setLayoutManager(layoutManager);
 
-        myAdapter = new DataAdapter(loadPeferences(), new DataAdapter.OnItemClickListener() {
+        linkedHashMap = loadPeferences();
+
+        myAdapter = new DataAdapter(linkedHashMap, new DataAdapter.OnItemClickListener() {
             @Override
-            public void onItemClick(final int position) {
+            public void onButtonClick(final int position) {
+                showRemoveAlertDialog(position);
+                Toast.makeText(MainActivity.this, "Item: " + position, Toast.LENGTH_SHORT).show();
+            }
 
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                // Add the buttons
-                builder.setTitle("Your Title");
-                builder.setMessage("Your Dialog Message");
-                builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        String key = (new ArrayList<>(linkedHashMap.keySet())).get(position);
-                        linkedHashMap.remove(key);
-                        myAdapter.notifyDataSetChanged();
-                    }
-                });
-                builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User cancelled the dialog
-                    }
-                });
+            @Override
+            public void onSoftKeyActionGo(Pair<String, String> str) {
+                linkedHashMap.remove(str.first);
+                linkedHashMap.put(str.second, false);
+                myAdapter.notifyItemInserted(linkedHashMap.size());
+                hideSoftKeyboard();
+                //Toast.makeText(MainActivity.this, "First: " + str.first + "   Second: " + str.second, Toast.LENGTH_SHORT).show();
+            }
 
-                AlertDialog dialog = builder.create();
-                dialog.show();
-
-
-                Toast.makeText(MainActivity.this, "Item: "+position, Toast.LENGTH_SHORT).show();
+            @Override
+            public void onCheckBoxClick(int position) {
+                invertValueByIndex(position);
             }
         });
         recyclerView.setAdapter(myAdapter);
@@ -131,9 +128,10 @@ public class MainActivity extends AppCompatActivity {
         //сохраним view
         SharedPreferences.Editor myEditor = myPreferences.edit();
         myEditor.clear();
-        for (View item : viewList) {
-            myEditor.putBoolean(((EditText) item.findViewById(R.id.editText)).getText().toString(),
-                    ((CheckBox) item.findViewById(R.id.checkBox1)).isChecked());
+
+        for (LinkedHashMap.Entry<String, Boolean> entry : linkedHashMap.entrySet()) {
+            myEditor.putBoolean(entry.getKey(),
+                    entry.getValue());
         }
         myEditor.apply();
     }
@@ -166,12 +164,9 @@ public class MainActivity extends AppCompatActivity {
             case R.id.editable_settings:
                 editFlag = !editFlag; // инвертируем флаг разрешения редактирования editText'ов
                 setSubTitleOnToolbar();
-                for (View item_1 : viewList) {
-                    EditText text1 = item_1.findViewById(R.id.editText);
-                    Button deleteField1 = item_1.findViewById(R.id.remove);
-                    settingItemsOnContentActivity(deleteField1, text1);
-                }
-                //Toast.makeText(getApplicationContext(), "text", Toast.LENGTH_SHORT).show();
+                myAdapter.itemActive = editFlag;
+                myAdapter.notifyDataSetChanged();
+                Toast.makeText(getApplicationContext(), "EditMode: " + editFlag, Toast.LENGTH_SHORT).show();
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -181,8 +176,8 @@ public class MainActivity extends AppCompatActivity {
     // strText - текст записываемый в EditText
     // chekedState - состояние CheckBox'а
     private void addItem(String strText, boolean chekedState) {
-        linkedHashMap.put(strText, chekedState);
-        myAdapter.notifyDataSetChanged();
+        linkedHashMap.put("New entry " + linkedHashMap.size(), false);
+        myAdapter.notifyItemInserted(linkedHashMap.size());
     }
 
     private LinkedHashMap<String, Boolean> loadPeferences() {
@@ -196,29 +191,20 @@ public class MainActivity extends AppCompatActivity {
                 return collator.compare(s, t1);
             }
         };
+
         SortedMap<String, Boolean> sortedMap = new TreeMap<String, Boolean>(comparator);
 
         for (Map.Entry<String, ?> entry : myPreferences.getAll().entrySet()) {
             sortedMap.put(entry.getKey(), (Boolean) entry.getValue());
             //Log.d("CLICK ROW:" , " SharedPreferences " + entry.getKey() + " : " + entry.getValue().toString());
         }
+
+        LinkedHashMap<String, Boolean> tempMap = new LinkedHashMap<>();
+
         for (Map.Entry<String, ?> entry : sortedMap.entrySet()) {
-            //Log.d("CLICK ROW:" , " SharedPreferences " + entry.getKey() + " : " + entry.getValue().toString());
-            addItem(entry.getKey(), (Boolean) entry.getValue());
+            tempMap.put(entry.getKey(), (Boolean) entry.getValue());
         }
-
-        linkedHashMap.put("String1", true);
-        linkedHashMap.put("String2", true);
-        linkedHashMap.put("String3", false);
-        linkedHashMap.put("String4", true);
-        linkedHashMap.put("String5", true);
-        linkedHashMap.put("String6", true);
-        return linkedHashMap;
-    }
-
-    private void setOptionTitle(int id, String title) {
-        MenuItem item = menu.findItem(id);
-        item.setTitle(title);
+        return tempMap;
     }
 
     private void setSubTitleOnToolbar() {
@@ -229,20 +215,53 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void settingItemsOnContentActivity(Button btn, EditText edt){
-        if (editFlag) {
-            //Активируем removeButton для возможности удаления кастомных активити
-            btn.setEnabled(true);
-            //Настраиваем EditText на запись
-            edt.setFocusable(true);
-            edt.setFocusableInTouchMode(true);
-            edt.setClickable(false);
-        } else {
-            //Деактивируем removeButton для невозможности удаления кастомных активити
-            btn.setEnabled(false);
-            //Настраиваем EditText только на чтение (дабы случайно не изменить)
-            edt.setFocusable(false);
-            edt.setClickable(true);
+    private void showRemoveAlertDialog(final int position) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        // Add the buttons
+        builder.setTitle("Your Title");
+        builder.setMessage("Your Dialog Message");
+        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User clicked OK button
+                String key = (new ArrayList<>(linkedHashMap.keySet())).get(position);
+
+                linkedHashMap.remove(key);
+                myAdapter.notifyItemRemoved(position);
+                //myAdapter.notifyDataSetChanged();
+            }
+        });
+        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User cancelled the dialog
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private boolean invertValueByIndex(int position) {
+        int counter = 0;
+        String str = "";
+        boolean value = false;
+
+        for (Map.Entry<String, Boolean> entry : linkedHashMap.entrySet()) {
+            if (counter == position) {
+                str = entry.getKey();
+                value = entry.getValue();
+            } else {
+                counter++;
+            }
+            if (str != "") {
+                linkedHashMap.put(str, !value);
+                return true;
+            }
         }
+        return false;
+    }
+
+    private void hideSoftKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(MainActivity.INPUT_METHOD_SERVICE);
+        imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
     }
 }
