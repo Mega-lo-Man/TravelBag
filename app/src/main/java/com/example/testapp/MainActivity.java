@@ -7,24 +7,22 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-
-import android.util.Log;
-import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
-
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
+
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+
 
 import java.text.Collator;
 import java.util.ArrayList;
@@ -39,7 +37,7 @@ import java.util.TreeMap;
 
 import static android.preference.PreferenceManager.getDefaultSharedPreferences;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity{//FragmentActivity {
 
     // это будет именем файла настроек
     //public static final String APP_PREFERENCES = "mysettings";
@@ -67,59 +65,38 @@ public class MainActivity extends AppCompatActivity {
     private DataAdapter myAdapter;
 
 
+
+    /**
+     * The number of pages (wizard steps) to show in this demo.
+     */
+    private static final int NUM_PAGES = 5;
+
+    /**
+     * The pager widget, which handles animation and allows swiping horizontally to access previous
+     * and next wizard steps.
+     */
+    private ViewPager2 mPager;
+
+    /**
+     * The pager adapter, which provides the pages to the view pager widget.
+     */
+    private FragmentStateAdapter pagerAdapter;
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         toolbar = findViewById(R.id.toolbar);
-
         setSupportActionBar(toolbar);
-
         setSubTitleOnToolbar();
 
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Log.d("CLICK ROW", String.valueOf(view.getId()));
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-
-        myPreferences = getDefaultSharedPreferences(this);//APP_PREFERENCES, Context.MODE_PRIVATE);
-
-        recyclerView = findViewById(R.id.my_recycler_view);
-        recyclerView.setHasFixedSize(true);
-
-        layoutManager = new LinearLayoutManager(this);
-
-        recyclerView.setLayoutManager(layoutManager);
-
-        linkedHashMap = loadPeferences();
-
-        myAdapter = new DataAdapter(linkedHashMap, new DataAdapter.OnItemClickListener() {
-            @Override
-            public void onButtonClick(final int position) {
-                showRemoveAlertDialog(position);
-                Toast.makeText(MainActivity.this, "Item: " + position, Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void onSoftKeyActionGo(Pair<String, String> str) {
-                linkedHashMap.remove(str.first);
-                linkedHashMap.put(str.second, false);
-                myAdapter.notifyItemInserted(linkedHashMap.size());
-                hideSoftKeyboard();
-                //Toast.makeText(MainActivity.this, "First: " + str.first + "   Second: " + str.second, Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void onCheckBoxClick(int position) {
-                invertValueByIndex(position);
-            }
-        });
-        recyclerView.setAdapter(myAdapter);
+        // Instantiate a ViewPager and a PagerAdapter
+        mPager = findViewById(R.id.view_pager);
+        pagerAdapter = new PagerAdapter(this);
+        mPager.setAdapter(pagerAdapter);
 
     }
 
@@ -161,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
         switch (id) {
             case R.id.add_settings:
                 counter++;
-                addItem("New entries" + counter, false);
+                //addItem("New entries" + counter, false);
                 return true;
             case R.id.editable_settings:
                 editFlag = !editFlag; // инвертируем флаг разрешения редактирования editText'ов
@@ -262,8 +239,5 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    private void hideSoftKeyboard() {
-        InputMethodManager imm = (InputMethodManager) getSystemService(MainActivity.INPUT_METHOD_SERVICE);
-        imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
-    }
+
 }

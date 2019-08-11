@@ -6,4 +6,6 @@
     <string name="search_hint">Поиск</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+    <string name="tab_text_1">Tab_1</string>
+    <string name="tab_text_2">Tab_2</string>
 </resources>

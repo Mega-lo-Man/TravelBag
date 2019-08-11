@@ -1,6 +1,7 @@
 package com.example.testapp;
 
 
+import android.content.Context;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -18,43 +19,15 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.List;
 
 
 public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
 
     public Boolean itemActive = false;
-    private LinkedHashMap<String, Boolean> mDataSet;
+    private List<Item> mDataSet;
     private OnItemClickListener listener;
-
-    public DataAdapter(LinkedHashMap<String, Boolean> myDataSet, OnItemClickListener myListener) {
-        mDataSet = myDataSet;
-        listener = myListener;
-    }
-
-    @NonNull
-    @Override
-    public DataAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.content_main, parent, false);
-        return new ViewHolder(v, new MyCustomEditTextListener());
-    }
-
-    @Override
-    public void onBindViewHolder(@NonNull DataAdapter.ViewHolder myViewHolder, int position) {
-        String key = (new ArrayList<>(mDataSet.keySet())).get(position);
-        myViewHolder.bind(key, position, listener);
-        Boolean value = (new ArrayList<>(mDataSet.values())).get(position);
-        myViewHolder.textItem.setText(key);
-        myViewHolder.chkItem.setChecked(value);
-        myViewHolder.removeItem.setEnabled(itemActive);
-        myViewHolder.textItem.setEnabled(itemActive);
-    }
-
-    @Override
-    public int getItemCount() {
-        return mDataSet.size();
-    }
+    private Context myContext;
 
     interface OnItemClickListener {
         void onButtonClick(int position);
@@ -62,6 +35,39 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
         void onSoftKeyActionGo(Pair<String, String> EditTextString);
 
         void onCheckBoxClick(int position);
+    }
+
+    public DataAdapter(Context context, List<Item> myDataSet, OnItemClickListener myListener) {
+        mDataSet = myDataSet;
+        listener = myListener;
+        myContext = context;
+
+    }
+
+    @NonNull
+    @Override
+    public DataAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View v = LayoutInflater.from(myContext).inflate(R.layout.content_main, parent, false);
+        final ViewHolder vHolder = new ViewHolder(v, new MyCustomEditTextListener());
+        Log.d("MARKER", "myContext: " + myContext.toString());
+        return vHolder;
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder myViewHolder, int position) {
+        //String key = (new ArrayList<>(mDataSet.keySet())).get(position);
+        myViewHolder.bind(mDataSet.get(position).getName(), position, listener);
+        //Boolean value = (new ArrayList<>(mDataSet.values())).get(position);
+        myViewHolder.textItem.setText(mDataSet.get(position).getName());
+        myViewHolder.chkItem.setChecked(mDataSet.get(position).getChecked());
+        myViewHolder.removeItem.setEnabled(itemActive);
+        myViewHolder.textItem.setEnabled(itemActive);
+        Log.d("MARKER", mDataSet.get(position).getName());
+    }
+
+    @Override
+    public int getItemCount() {
+        return mDataSet.size();
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
