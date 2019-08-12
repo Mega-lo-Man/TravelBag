@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity{//FragmentActivity {
     private int counter = 0;
 
     //список вьюх которые будут создаваться
-    public List<Item> viewList;
+    public ArrayList<Item> viewList;
 
     private Menu menu;
 
@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity{//FragmentActivity {
      */
     private FragmentStateAdapter pagerAdapter;
 
-
+    private DataSource dataSource;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,23 +93,8 @@ public class MainActivity extends AppCompatActivity{//FragmentActivity {
         setSupportActionBar(toolbar);
         setSubTitleOnToolbar();
 
-
-        viewList = new ArrayList<>();
-
-        viewList.add(new Item("Item 1", true));
-        viewList.add(new Item("Item 2", true));
-        viewList.add(new Item("Item 3", true));
-        viewList.add(new Item("Item 4", true));
-        viewList.add(new Item("Item 5", true));
-        viewList.add(new Item("Item 6", true));
-        viewList.add(new Item("Item 7", true));
-        viewList.add(new Item("Item 8", true));
-        viewList.add(new Item("Item 9", true));
-        viewList.add(new Item("Item 10", true));
-        viewList.add(new Item("Item 11", true));
-        viewList.add(new Item("Item 12", true));
-        viewList.add(new Item("Item 13", true));
-
+        dataSource  = new DataSource();
+        viewList = dataSource.getTestDataset();
 
         // Instantiate a ViewPager and a PagerAdapter
         mPager = findViewById(R.id.view_pager);
@@ -156,7 +141,7 @@ public class MainActivity extends AppCompatActivity{//FragmentActivity {
         switch (id) {
             case R.id.add_settings:
                 counter++;
-                addItem("New entries" + counter, false);
+                dataSource.addItem(new Item("Item " + counter, false));
                 return true;
             case R.id.editable_settings:
                 editFlag = !editFlag; // инвертируем флаг разрешения редактирования editText'ов
