@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity{//FragmentActivity {
     private int counter = 0;
 
     //список вьюх которые будут создаваться
-    private List<View> viewList;
+    public List<Item> viewList;
 
     private Menu menu;
 
@@ -93,9 +93,27 @@ public class MainActivity extends AppCompatActivity{//FragmentActivity {
         setSupportActionBar(toolbar);
         setSubTitleOnToolbar();
 
+
+        viewList = new ArrayList<>();
+
+        viewList.add(new Item("Item 1", true));
+        viewList.add(new Item("Item 2", true));
+        viewList.add(new Item("Item 3", true));
+        viewList.add(new Item("Item 4", true));
+        viewList.add(new Item("Item 5", true));
+        viewList.add(new Item("Item 6", true));
+        viewList.add(new Item("Item 7", true));
+        viewList.add(new Item("Item 8", true));
+        viewList.add(new Item("Item 9", true));
+        viewList.add(new Item("Item 10", true));
+        viewList.add(new Item("Item 11", true));
+        viewList.add(new Item("Item 12", true));
+        viewList.add(new Item("Item 13", true));
+
+
         // Instantiate a ViewPager and a PagerAdapter
         mPager = findViewById(R.id.view_pager);
-        pagerAdapter = new PagerAdapter(this);
+        pagerAdapter = new PagerAdapter(this, viewList);
         mPager.setAdapter(pagerAdapter);
 
     }
@@ -138,7 +156,7 @@ public class MainActivity extends AppCompatActivity{//FragmentActivity {
         switch (id) {
             case R.id.add_settings:
                 counter++;
-                //addItem("New entries" + counter, false);
+                addItem("New entries" + counter, false);
                 return true;
             case R.id.editable_settings:
                 editFlag = !editFlag; // инвертируем флаг разрешения редактирования editText'ов
@@ -155,8 +173,9 @@ public class MainActivity extends AppCompatActivity{//FragmentActivity {
     // strText - текст записываемый в EditText
     // chekedState - состояние CheckBox'а
     private void addItem(String strText, boolean chekedState) {
-        linkedHashMap.put("New entry " + linkedHashMap.size(), false);
-        myAdapter.notifyItemInserted(linkedHashMap.size());
+        //linkedHashMap.put("New entry " + linkedHashMap.size(), false);
+        viewList.add(new Item("Item 13", false));
+        //myAdapter.notifyItemInserted(linkedHashMap.size());
     }
 
     private LinkedHashMap<String, Boolean> loadPeferences() {

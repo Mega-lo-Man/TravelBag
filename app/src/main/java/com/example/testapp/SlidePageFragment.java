@@ -22,13 +22,19 @@ public class SlidePageFragment extends Fragment {
     private RecyclerView myRecyclerView;
     private List<Item> lstItems;
 
+    public SlidePageFragment(List<Item> lstItems) {
+        this.lstItems = lstItems;
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        lstItems = new ArrayList<>();
 
-        lstItems.add(new Item("Item 1", true));
+
+        //lstItems = new ArrayList<>();
+
+        /*lstItems.add(new Item("Item 1", true));
         lstItems.add(new Item("Item 2", true));
         lstItems.add(new Item("Item 3", true));
         lstItems.add(new Item("Item 4", true));
@@ -36,7 +42,7 @@ public class SlidePageFragment extends Fragment {
         lstItems.add(new Item("Item 6", true));
         lstItems.add(new Item("Item 7", true));
         lstItems.add(new Item("Item 8", true));
-        lstItems.add(new Item("Item 9", true));
+        lstItems.add(new Item("Item 9", true));*/
     }
 
     @Nullable
